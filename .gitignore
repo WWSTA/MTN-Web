@@ -1,0 +1,21 @@
+# Clone of the upstream reader repo (used only during development to
+# extract the browser PoC bundle — not part of the deployed site).
+/MOSS-TTS-Nano-Reader/
+
+# Node / build artifacts
+node_modules/
+dist/
+build/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+
+# Temporary download artifacts
+*.tmp
+*.partial
