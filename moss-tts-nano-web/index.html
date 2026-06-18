@@ -5,6 +5,27 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MOSS-TTS-Nano - 浏览器端语音合成</title>
   <link rel="stylesheet" href="css/style.css">
+  <!-- COI Service Worker: enables SharedArrayBuffer on GitHub Pages -->
+  <script>
+  (function() {
+    if (window.crossOriginIsolated) return;
+    if (!navigator.serviceWorker) return;
+    var RELOAD_KEY = 'coi-sw-reloaded';
+    if (sessionStorage.getItem(RELOAD_KEY)) {
+      sessionStorage.removeItem(RELOAD_KEY);
+      console.log('[COI] Service worker active, page reloaded with crossOriginIsolated');
+      return;
+    }
+    navigator.serviceWorker.register('./sw.js').then(function(reg) {
+      console.log('[COI] Service worker registered. Reloading page...');
+      sessionStorage.setItem(RELOAD_KEY, '1');
+      setTimeout(function() { location.reload(); }, 200);
+    }).catch(function(err) {
+      console.warn('[COI] Service worker registration failed:', err);
+      console.warn('[COI] ONNX Runtime will run in single-threaded mode (slower)');
+    });
+  })();
+  </script>
   <style>
     /* Additional styles for the standalone web app */
     .status-bar {

@@ -1,4 +1,14 @@
-# Model files (large, download separately)
+# === Model Files ===
+# Option A: Use Git LFS (recommended) - uncomment below and comment out Option B
+# models/MOSS-TTS-Nano-100M-ONNX/*.onnx
+# models/MOSS-TTS-Nano-100M-ONNX/*.data
+# models/MOSS-TTS-Nano-100M-ONNX/*.model
+# models/MOSS-TTS-Nano-100M-ONNX/*.json
+# models/MOSS-Audio-Tokenizer-Nano-ONNX/*.onnx
+# models/MOSS-Audio-Tokenizer-Nano-ONNX/*.data
+# models/MOSS-Audio-Tokenizer-Nano-ONNX/*.json
+
+# Option B: Don't track models (users download separately)
 models/MOSS-TTS-Nano-100M-ONNX/*.onnx
 models/MOSS-TTS-Nano-100M-ONNX/*.data
 models/MOSS-TTS-Nano-100M-ONNX/*.model
@@ -11,11 +21,11 @@ models/MOSS-Audio-Tokenizer-Nano-ONNX/*.json
 !models/MOSS-TTS-Nano-100M-ONNX/.gitkeep
 !models/MOSS-Audio-Tokenizer-Nano-ONNX/.gitkeep
 
-# OS files
+# === OS files ===
 .DS_Store
 Thumbs.db
 
-# IDE
+# === IDE ===
 .vscode/
 .idea/
 *.swp

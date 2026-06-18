@@ -1,0 +1,6 @@
+# Git LFS tracking for large model files
+models/MOSS-TTS-Nano-100M-ONNX/*.data filter=lfs diff=lfs merge=lfs -text
+models/MOSS-TTS-Nano-100M-ONNX/*.model filter=lfs diff=lfs merge=lfs -text
+models/MOSS-Audio-Tokenizer-Nano-ONNX/*.data filter=lfs diff=lfs merge=lfs -text
+models/MOSS-TTS-Nano-100M-ONNX/*.onnx filter=lfs diff=lfs merge=lfs -text
+models/MOSS-Audio-Tokenizer-Nano-ONNX/*.onnx filter=lfs diff=lfs merge=lfs -text
