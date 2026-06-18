@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MOSS-TTS-Nano - 浏览器端语音合成</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    /* Additional styles for the standalone web app */
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 0;
+      font-size: 0.9em;
+    }
+    .status-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: #ccc;
+      flex-shrink: 0;
+    }
+    .status-dot.ready { background: #2ed573; }
+    .status-dot.loading { background: #ffa502; animation: pulse 1s infinite; }
+    .status-dot.error { background: #ff4757; }
+    .status-dot.generating { background: #667eea; animation: pulse 0.5s infinite; }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+    .progress-bar {
+      width: 100%; height: 6px;
+      background: #e0e0e0;
+      border-radius: 3px;
+      overflow: hidden;
+      margin: 8px 0;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(135deg, #1c6e5f, #d68229);
+      border-radius: 3px;
+      transition: width 0.3s;
+      width: 0%;
+    }
+    .model-hint {
+      background: #fff8e1;
+      border: 1px solid #ffc107;
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 0.9em;
+      color: #856404;
+      margin-bottom: 16px;
+      line-height: 1.6;
+    }
+    .model-hint code {
+      background: rgba(0,0,0,0.06);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.9em;
+    }
+    #audio-panel audio {
+      width: 100%;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <main class="layout">
+    <!-- Hero -->
+    <section class="panel hero">
+      <p class="eyebrow">CPU-only Browser ONNX</p>
+      <h1>MOSS-TTS-Nano</h1>
+      <p class="lead">
+        0.1B 参数多语言语音合成模型，纯浏览器端运行。支持中文、英文、日语、韩语等近 20 种语言。
+        无需后端服务，无需 GPU，打开即用。
+      </p>
+      <p class="meta">
+        基于 <a href="https://github.com/OpenMOSS/MOSS-TTS-Nano" target="_blank">OpenMOSS/MOSS-TTS-Nano</a> 开源项目，
+        使用 ONNX Runtime Web 在浏览器中运行推理。
+      </p>
+    </section>
+
+    <!-- Model Setup -->
+    <section class="panel">
+      <h2>模型配置</h2>
+      <div class="model-hint">
+        模型文件需放在 <code>models/</code> 目录下。请先运行 <code>python download_models.py</code> 下载模型（约 700MB），
+        或手动从 HuggingFace 下载后放入对应目录。
+      </div>
+      <div class="grid two-up">
+        <label class="field">
+          <span>模型根目录路径</span>
+          <input id="model-path" type="text" value="./models" placeholder="./models">
+        </label>
+        <label class="field">
+          <span>CPU 线程数 (0=自动)</span>
+          <input id="cpu-threads" type="number" min="0" max="16" value="4" step="1">
+        </label>
+      </div>
+      <div class="actions">
+        <button id="btn-load-model" type="button" disabled>加载模型</button>
+      </div>
+      <p class="meta">点击"加载模型"以初始化 ONNX 推理引擎（首次加载约需 30-60 秒）。</p>
+    </section>
+
+    <!-- Status -->
+    <section class="panel">
+      <h2>状态</h2>
+      <div class="status-bar">
+        <div id="status-dot" class="status-dot"></div>
+        <span id="status-text">等待模型加载...</span>
+      </div>
+      <div class="progress-bar"><div id="progress-fill" class="progress-fill"></div></div>
+      <pre id="log-output" class="log-output">等待初始化...</pre>
+    </section>
+
+    <!-- Voice Selection -->
+    <section class="panel">
+      <h2>音色选择</h2>
+      <div class="grid two-up">
+        <label class="field">
+          <span>内置音色</span>
+          <select id="voice-select">
+            <option value="">请先加载模型</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>示例文本</span>
+          <select id="sample-select">
+            <option value="">请先加载模型</option>
+          </select>
+        </label>
+      </div>
+      <label class="field">
+        <span>参考音频上传（语音克隆）</span>
+        <input id="voice-file" type="file" accept=".wav,.mp3,.flac,.ogg,.m4a,audio/*">
+      </label>
+    </section>
+
+    <!-- Text Input -->
+    <section class="panel">
+      <h2>合成文本</h2>
+      <label class="field">
+        <textarea id="tts-text" rows="4" placeholder="请输入要合成的文本...&#10;支持中文、英文、日语、韩语等近 20 种语言。"></textarea>
+      </label>
+      <div class="grid two-up">
+        <label class="field">
+          <span>采样模式</span>
+          <select id="sample-mode">
+            <option value="fixed">Fixed (推荐)</option>
+            <option value="full">Full</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>流式解码</span>
+          <select id="streaming">
+            <option value="true">开启 (实时)</option>
+            <option value="false">关闭 (完整)</option>
+          </select>
+        </label>
+      </div>
+      <div class="actions">
+        <button id="btn-generate" type="button" disabled>生成语音</button>
+        <button id="btn-stop" type="button" disabled>停止</button>
+      </div>
+    </section>
+
+    <!-- Audio Player -->
+    <section class="panel" id="audio-panel" style="display:none;">
+      <h2>音频播放</h2>
+      <audio id="audio-player" controls></audio>
+    </section>
+  </main>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+# Model files (large, download separately)
+models/MOSS-TTS-Nano-100M-ONNX/*.onnx
+models/MOSS-TTS-Nano-100M-ONNX/*.data
+models/MOSS-TTS-Nano-100M-ONNX/*.model
+models/MOSS-TTS-Nano-100M-ONNX/*.json
+models/MOSS-Audio-Tokenizer-Nano-ONNX/*.onnx
+models/MOSS-Audio-Tokenizer-Nano-ONNX/*.data
+models/MOSS-Audio-Tokenizer-Nano-ONNX/*.json
+
+# Keep directory structure placeholders
+!models/MOSS-TTS-Nano-100M-ONNX/.gitkeep
+!models/MOSS-Audio-Tokenizer-Nano-ONNX/.gitkeep
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
