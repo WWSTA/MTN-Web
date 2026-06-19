@@ -375,11 +375,38 @@ async function readTextFromLocalPath(rootPath, relativePath) {
 async function readBufferFromLocalPath(rootPath, relativePath) {
   const normalizedPath = normalizeRelativePath(relativePath);
   const fileUrl = new URL(normalizedPath, assetRootPathToUrl(rootPath)).href;
-  const response = await fetch(fileUrl, { cache: "no-store" });
-  if (!response.ok) {
-    throw new Error(`Failed to read ${fileUrl} (status=${response.status})`);
+  // 先用 fetch 尝试加载（小文件一般没问题）
+  try {
+    const response = await fetch(fileUrl, { cache: "no-store" });
+    if (response.ok) {
+      return new Uint8Array(await response.arrayBuffer());
+    }
+    throw new Error(`HTTP ${response.status}`);
+  } catch (fetchError) {
+    // fetch 失败（可能是 Service Worker 干扰大文件），回退到 XMLHttpRequest
+    // XMLHttpRequest 不会被 Service Worker 拦截，适合加载 400MB+ 的外部数据文件
+    try {
+      const xhrData = await new Promise(function(resolve, reject) {
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", fileUrl, true);
+        xhr.responseType = "arraybuffer";
+        xhr.onload = function() {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve(new Uint8Array(xhr.response));
+          } else {
+            reject(new Error("XHR HTTP " + xhr.status));
+          }
+        };
+        xhr.onerror = function() { reject(new Error("XHR network error")); };
+        xhr.ontimeout = function() { reject(new Error("XHR timeout")); };
+        xhr.timeout = 300000; // 5 分钟超时，大文件需要更长时间
+        xhr.send();
+      });
+      return xhrData;
+    } catch (xhrError) {
+      throw new Error("Failed to read " + fileUrl + " (fetch: " + (fetchError.message || String(fetchError)) + ", xhr: " + (xhrError.message || String(xhrError)) + ")");
+    }
   }
-  return new Uint8Array(await response.arrayBuffer());
 }
 function flatten3dInt32(nested) {
   const dim0 = nested.length;
@@ -1419,7 +1446,7 @@ var BrowserOnnxTtsRuntime = class {
           });
           this.log(`Loaded external data bytes: ${externalDataRelativePath} (${formatByteCount(externalData.byteLength)})`);
         } catch (error) {
-          this.log(`External data sidecar not used: ${externalDataRelativePath}`);
+          this.log(`External data sidecar not used: ${externalDataRelativePath} (${error.message || String(error)})`);
         }
       }
       if (loadedExternalData.length > 0) {
