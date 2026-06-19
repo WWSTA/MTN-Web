@@ -29,9 +29,9 @@ jobs:
       - name: Verify LFS files are real
         run: |
           echo "Checking that LFS pointers were resolved to real binaries..."
-          for f in \
-            models/MOSS-TTS-Nano-100M-ONNX/moss_tts_global_shared.data \
-            models/MOSS-TTS-Nano-100M-ONNX/moss_tts_local_shared.data; do
+          # Check chunked files (TTS .data chunks)
+          for f in models/MOSS-TTS-Nano-100M-ONNX/moss_tts_global_shared.data.* \
+                   models/MOSS-TTS-Nano-100M-ONNX/moss_tts_local_shared.data.*; do
             if [ -f "$f" ]; then
               size=$(stat -c%s "$f" 2>/dev/null || stat -f%z "$f")
               echo "  $f -> ${size} bytes"
@@ -40,6 +40,32 @@ jobs:
               fi
             fi
           done
+          # Check non-chunked .data files (codec)
+          for f in models/MOSS-Audio-Tokenizer-Nano-ONNX/moss_audio_tokenizer_encode.data \
+                   models/MOSS-Audio-Tokenizer-Nano-ONNX/moss_audio_tokenizer_decode_shared.data; do
+            if [ -f "$f" ]; then
+              size=$(stat -c%s "$f" 2>/dev/null || stat -f%z "$f")
+              echo "  $f -> ${size} bytes"
+              if [ "$size" -lt 1048576 ]; then
+                echo "  WARNING: $f looks like an LFS pointer (too small). Did you push with LFS?"
+              fi
+            fi
+          done
+
+      - name: Verify no oversized files (>100MB would 404 on Pages)
+        run: |
+          echo "Checking for files over 100MB that would fail on GitHub Pages..."
+          oversized=0
+          find . -type f -not -path './.git/*' -size +100M | while read f; do
+            size=$(stat -c%s "$f")
+            echo "  WARNING: $f is ${size} bytes (>100MB, will 404 on Pages!)"
+            oversized=1
+          done
+          if [ "$oversized" -eq 1 ]; then
+            echo "ERROR: Found files over 100MB that need to be split into chunks!"
+            exit 1
+          fi
+          echo "OK: No files over 100MB found."
 
       - name: List site contents
         run: |

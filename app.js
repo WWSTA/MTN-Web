@@ -375,38 +375,91 @@ async function readTextFromLocalPath(rootPath, relativePath) {
 async function readBufferFromLocalPath(rootPath, relativePath) {
   const normalizedPath = normalizeRelativePath(relativePath);
   const fileUrl = new URL(normalizedPath, assetRootPathToUrl(rootPath)).href;
-  // 先用 fetch 尝试加载（小文件一般没问题）
+
+  // 尝试直接加载文件
   try {
-    const response = await fetch(fileUrl, { cache: "no-store" });
+    const data = await fetchArrayBuffer(fileUrl);
+    return data;
+  } catch (directError) {
+    // 直接加载失败（可能是 GitHub Pages 100MB 文件大小限制导致 404）
+    // 尝试加载分块文件并拼接
+    try {
+      const chunkedData = await loadChunkedFile(rootPath, normalizedPath);
+      return chunkedData;
+    } catch (chunkError) {
+      throw new Error("Failed to read " + fileUrl + " (direct: " + (directError.message || String(directError)) + ", chunked: " + (chunkError.message || String(chunkError)) + ")");
+    }
+  }
+}
+
+// 通过 fetch 或 XHR 加载单个文件的 ArrayBuffer
+async function fetchArrayBuffer(url) {
+  // 先用 fetch 尝试
+  try {
+    const response = await fetch(url, { cache: "no-store" });
     if (response.ok) {
       return new Uint8Array(await response.arrayBuffer());
     }
-    throw new Error(`HTTP ${response.status}`);
+    throw new Error("HTTP " + response.status);
   } catch (fetchError) {
-    // fetch 失败（可能是 Service Worker 干扰大文件），回退到 XMLHttpRequest
-    // XMLHttpRequest 不会被 Service Worker 拦截，适合加载 400MB+ 的外部数据文件
+    // fetch 失败，回退到 XMLHttpRequest（不被 Service Worker 拦截）
+    return new Promise(function(resolve, reject) {
+      var xhr = new XMLHttpRequest();
+      xhr.open("GET", url, true);
+      xhr.responseType = "arraybuffer";
+      xhr.onload = function() {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve(new Uint8Array(xhr.response));
+        } else {
+          reject(new Error("XHR HTTP " + xhr.status));
+        }
+      };
+      xhr.onerror = function() { reject(new Error("XHR network error")); };
+      xhr.ontimeout = function() { reject(new Error("XHR timeout")); };
+      xhr.timeout = 300000;
+      xhr.send();
+    });
+  }
+}
+
+// 加载分块文件并拼接（用于 GitHub Pages 100MB 限制的绕过方案）
+// 分块命名规则：file.data → file.data.00, file.data.01, file.data.02, ...
+// （由 split -b 90M -d 生成，-d 产生两位数字后缀）
+async function loadChunkedFile(rootPath, normalizedPath) {
+  var chunkIndex = 0;
+  var chunks = [];
+  var baseUrl = new URL(normalizedPath, assetRootPathToUrl(rootPath)).href;
+
+  // 逐个尝试加载分块，直到某个分块不存在为止
+  while (true) {
+    var chunkSuffix = String(chunkIndex).padStart(2, "0");
+    var chunkUrl = baseUrl + "." + chunkSuffix;
     try {
-      const xhrData = await new Promise(function(resolve, reject) {
-        var xhr = new XMLHttpRequest();
-        xhr.open("GET", fileUrl, true);
-        xhr.responseType = "arraybuffer";
-        xhr.onload = function() {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            resolve(new Uint8Array(xhr.response));
-          } else {
-            reject(new Error("XHR HTTP " + xhr.status));
-          }
-        };
-        xhr.onerror = function() { reject(new Error("XHR network error")); };
-        xhr.ontimeout = function() { reject(new Error("XHR timeout")); };
-        xhr.timeout = 300000; // 5 分钟超时，大文件需要更长时间
-        xhr.send();
-      });
-      return xhrData;
-    } catch (xhrError) {
-      throw new Error("Failed to read " + fileUrl + " (fetch: " + (fetchError.message || String(fetchError)) + ", xhr: " + (xhrError.message || String(xhrError)) + ")");
+      var chunkData = await fetchArrayBuffer(chunkUrl);
+      chunks.push(chunkData);
+      chunkIndex++;
+    } catch (e) {
+      // 该分块不存在，停止加载
+      break;
     }
   }
+
+  if (chunks.length === 0) {
+    throw new Error("No chunks found for " + normalizedPath);
+  }
+
+  // 拼接所有分块
+  var totalLength = 0;
+  for (var i = 0; i < chunks.length; i++) {
+    totalLength += chunks[i].byteLength;
+  }
+  var result = new Uint8Array(totalLength);
+  var offset = 0;
+  for (var i = 0; i < chunks.length; i++) {
+    result.set(chunks[i], offset);
+    offset += chunks[i].byteLength;
+  }
+  return result;
 }
 function flatten3dInt32(nested) {
   const dim0 = nested.length;
