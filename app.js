@@ -2425,6 +2425,7 @@ var ui = {
   streamingButton: document.getElementById("btn-run-streaming"),
   stopButton: document.getElementById("btn-stop-playback"),
   statusValue: document.getElementById("status-value"),
+  statusExplanation: document.getElementById("status-explanation"),
   preparedTextMeta: document.getElementById("prepared-text-meta"),
   preparedTextValue: document.getElementById("prepared-text-value"),
   logValue: document.getElementById("log-output"),
@@ -2739,8 +2740,134 @@ async function saveBrowserUploadedVoices(rows) {
     browserUploadedVoices: Array.isArray(rows) ? rows.map(normalizeBrowserVoiceRow).filter(Boolean) : []
   });
 }
+function explainMessage(message) {
+  // 将状态/日志信息映射为中文解释，帮助用户理解当前进度
+  var msg = String(message);
+  var isError = false;
+  var summary = "";
+  var detail = "";
+
+  // 匹配规则（按优先级排列）
+  if (msg.includes("Browser ONNX PoC script initialized")) {
+    summary = "页面初始化完成";
+    detail = "MOSS-TTS-Nano 浏览器推理引擎已就绪，请选择模型路径后点击「加载并准备」。";
+  } else if (msg.includes("Selected local model path")) {
+    summary = "模型路径已确认";
+    detail = "已设置模型文件根目录，下一步请点击「加载并准备」来加载和预热模型。";
+  } else if (msg.includes("Model path saved")) {
+    summary = "模型路径已保存";
+    detail = "路径已保存到浏览器本地存储，下次打开页面会自动加载。";
+  } else if (msg.includes("Loading browser ONNX assets")) {
+    summary = "正在加载模型";
+    detail = "正在加载分词器、ONNX 推理会话并执行预热。大型模型文件（~700MB）加载可能需要 1-3 分钟，请耐心等待。";
+  } else if (msg.includes("loaded and warmed up")) {
+    summary = "模型加载完成，可以使用了";
+    detail = "分词器、ONNX 推理会话已全部就绪，预热已完成。现在可以前往「语音选择」区域选择语音并开始合成。";
+  } else if (msg.includes("Voice list refreshed")) {
+    summary = "语音列表已刷新";
+    detail = "内置语音和已上传的语音列表已更新。";
+  } else if (msg.includes("Runtime metadata loaded")) {
+    summary = "模型元数据已加载";
+    detail = "模型清单文件已解析完成，点击「加载并准备」完成预热后即可使用。";
+  } else if (msg.includes("Enter a valid model path")) {
+    summary = "需要设置模型路径";
+    detail = "请在「模型源」区域的输入框中填写模型根目录路径（默认为 models），然后点击「应用路径」或「加载并准备」。";
+  } else if (msg.includes("Packaged browser_onnx models missing")) {
+    summary = "模型文件缺失";
+    detail = "仓库中未找到预置的 ONNX 模型文件。系统将尝试从 hf-mirror.com 下载到浏览器本地存储中。";
+  } else if (msg.includes("Downloaded browser_onnx models")) {
+    summary = "模型已下载到本地存储";
+    detail = "ONNX 模型文件已从镜像源下载到浏览器本地存储中，数据不会丢失。";
+  } else if (msg.includes("Using existing browser-managed")) {
+    summary = "使用已缓存的模型";
+    detail = "检测到浏览器本地存储中已有模型文件，直接使用缓存，无需重新下载。";
+  } else if (msg.includes("Running realtime streaming decode")) {
+    summary = "正在进行实时流式解码";
+    detail = "模型正在逐 token 生成语音，边生成边播放，首音延迟较低。请耐心等待，生成过程中可以点击「停止」中断。";
+  } else if (msg.includes("Running non-streaming synthesis")) {
+    summary = "正在进行非流式合成";
+    detail = "模型正在生成完整语音，全部生成完毕后一次性播放。对于较长文本可能需要等待较长时间。";
+  } else if (msg.includes("Streaming") && msg.includes("synthesis voice=")) {
+    summary = "开始语音合成";
+    detail = "正在使用选定的语音音色生成语音。请关注下方日志中的进度信息。";
+  } else if (msg.includes("Non-streaming") && msg.includes("synthesis voice=")) {
+    summary = "开始语音合成";
+    detail = "正在使用选定的语音音色生成语音。请关注下方日志中的进度信息。";
+  } else if (msg.includes("playback queued")) {
+    summary = "语音合成完成，播放已排队";
+    detail = "生成的音频块已加入播放队列，浏览器将自动播放。如果听不到声音，请检查浏览器音量设置。";
+  } else if (msg.includes("Playback stopped")) {
+    summary = "播放已停止";
+    detail = "已手动停止当前播放。可以重新选择文本开始新的合成。";
+  } else if (msg.includes("Encoding uploaded prompt audio")) {
+    summary = "正在编码上传的音频";
+    detail = "正在将上传的参考音频文件编码为声音克隆用的提示音频编码。此过程在本地浏览器中完成。";
+  } else if (msg.includes("Uploaded voice saved")) {
+    summary = "自定义语音已保存";
+    detail = "上传的语音已编码并保存到浏览器本地存储，可在「语音选择」中看到并使用。";
+  } else if (msg.includes("Manifest resolved")) {
+    summary = "模型清单解析完成";
+    detail = "已读取模型配置文件，确认模型文件列表和内置语音信息。";
+  } else if (msg.includes("Loaded model bytes")) {
+    summary = "加载模型文件";
+    detail = "正在从本地路径加载 ONNX 模型文件到内存中。";
+  } else if (msg.includes("Loaded external data bytes")) {
+    summary = "加载外部数据文件";
+    detail = "正在加载 ONNX 模型的外部权重数据（.data 文件）。";
+  } else if (msg.includes("External data sidecar not used")) {
+    summary = "跳过外部数据";
+    detail = "当前 ONNX 模型不包含外部数据文件，跳过加载。";
+  } else if (msg.includes("Tokenizer loaded via sandbox")) {
+    summary = "分词器加载完成";
+    detail = "SentencePiece 分词器已在沙盒 iframe 中加载完成，用于文本到 token 的转换。";
+  } else if (msg.includes("Creating ORT session")) {
+    summary = "创建 ONNX 推理会话";
+    detail = "正在为 ONNX 模型图创建推理会话，这是模型推理的核心组件。";
+  } else if (msg.includes("ORT session ready")) {
+    summary = "ONNX 推理会话就绪";
+    detail = "ONNX Runtime 推理会话已创建完成，可以开始推理。";
+  } else if (msg.includes("ORT wasm path=")) {
+    summary = "ONNX Runtime WASM 配置";
+    detail = "正在配置 ONNX Runtime WebAssembly 运行时的路径。";
+  } else if (msg.includes("ORT session options=")) {
+    summary = "ONNX 会话参数配置";
+    detail = "正在设置 ONNX 推理会话的参数（线程数、执行提供器等）。";
+  } else if (msg.includes("Robust text normalization applied")) {
+    summary = "文本规范化完成";
+    detail = "输入文本已通过正则化和规范化处理，转换为模型可处理的格式。";
+  } else if (msg.includes("Generation stopped at step")) {
+    summary = "生成已停止";
+    detail = "模型在生成过程中遇到终止 token，表示语音生成已完成。";
+  } else if (msg.includes("Full codec decode failed")) {
+    summary = "编解码器降级";
+    detail = "全量编解码失败，系统自动切换到增量解码模式。这通常不影响最终输出质量。";
+    isError = true;
+  } else if (msg.includes("Streaming chunk queued")) {
+    summary = "流式音频块已排队";
+    detail = "一个音频块已生成并加入播放队列，浏览器即将播放。";
+  } else if (msg.includes("Initial metadata load skipped")) {
+    summary = "元数据加载跳过";
+    detail = "初始元数据加载因故跳过（可能是网络问题或 Manifest 文件缺失），将使用备用方案。";
+    isError = true;
+  } else if (msg.toLowerCase().includes("error") || msg.toLowerCase().includes("fail") || msg.toLowerCase().includes("exception")) {
+    summary = "发生错误";
+    detail = "执行过程中出现错误，请查看完整日志了解详情。常见原因：模型文件缺失、网络问题、浏览器不兼容。";
+    isError = true;
+  } else {
+    // 未匹配到已知模式，显示原始消息摘要
+    var short = msg.length > 80 ? msg.substring(0, 80) + "…" : msg;
+    summary = "系统消息";
+    detail = short;
+  }
+
+  // 更新解释框
+  ui.statusExplanation.className = "explanation-box" + (isError ? " error" : "");
+  ui.statusExplanation.innerHTML = '<p class="explanation-summary">' + summary + '</p><p class="explanation-detail">' + detail + '</p>';
+}
+
 function setStatus(message) {
   ui.statusValue.textContent = message;
+  explainMessage(message);
 }
 function setPreparedTextPlaceholder(text = "No prepared text yet.", meta = "No prepared text yet.") {
   ui.preparedTextValue.textContent = text;
@@ -2831,6 +2958,7 @@ function logLine(message) {
   ui.logValue.textContent = `${ui.logValue.textContent}[${timestamp}] ${message}
 `;
   ui.logValue.scrollTop = ui.logValue.scrollHeight;
+  explainMessage(message);
 }
 function getPlayer() {
   if (!state.player) {
