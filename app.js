@@ -308,8 +308,8 @@ function isManagedModelPath(rootPath) {
   return Boolean(store?.isManagedModelPath?.(rootPath));
 }
 var MANIFEST_CANDIDATE_RELATIVE_PATHS = [
-  "browser_poc_manifest.json",
   "MOSS-TTS-Nano-100M-ONNX/browser_poc_manifest.json",
+  "browser_poc_manifest.json",
   "MOSS-TTS-Nano-ONNX-CPU/browser_poc_manifest.json"
 ];
 function joinRelativeAssetPath(baseRelativePath, childRelativePath) {
