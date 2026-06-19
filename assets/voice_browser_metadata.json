@@ -1,0 +1,110 @@
+[
+  {
+    "voice": "Junhao",
+    "display_name": "CN 欢迎关注模思智能",
+    "group": "Chinese Male",
+    "audio_file": "zh_1.wav"
+  },
+  {
+    "voice": "Zhiming",
+    "display_name": "CN 京味胡同闲聊",
+    "group": "Chinese Male",
+    "audio_file": "zh_3.wav"
+  },
+  {
+    "voice": "Weiguo",
+    "display_name": "CN 说书",
+    "group": "Chinese Male",
+    "audio_file": "zh_10.wav"
+  },
+  {
+    "voice": "Xiaoyu",
+    "display_name": "CN 明星",
+    "group": "Chinese Female",
+    "audio_file": "zh_11.wav"
+  },
+  {
+    "voice": "Yuewen",
+    "display_name": "CN 机车",
+    "group": "Chinese Female",
+    "audio_file": "zh_4.wav"
+  },
+  {
+    "voice": "Lingyu",
+    "display_name": "CN 深夜电台",
+    "group": "Chinese Female",
+    "audio_file": "zh_6.wav"
+  },
+  {
+    "voice": "Trump",
+    "display_name": "EN Trump",
+    "group": "English Male",
+    "audio_file": "en_1.wav"
+  },
+  {
+    "voice": "Ava",
+    "display_name": "EN The Bitter Lesson",
+    "group": "English Female",
+    "audio_file": "en_2.wav"
+  },
+  {
+    "voice": "Bella",
+    "display_name": "EN A Gentle Reminder",
+    "group": "English Female",
+    "audio_file": "en_3.wav"
+  },
+  {
+    "voice": "Adam",
+    "display_name": "EN English News",
+    "group": "English Male",
+    "audio_file": "en_4.wav"
+  },
+  {
+    "voice": "Nathan",
+    "display_name": "EN The Quiet Motion of the World",
+    "group": "English Male",
+    "audio_file": "en_8.wav"
+  },
+  {
+    "voice": "Soyo",
+    "display_name": "JP Soyo",
+    "group": "Japanese Female",
+    "audio_file": "jp_1.wav"
+  },
+  {
+    "voice": "Saki",
+    "display_name": "JP Saki",
+    "group": "Japanese Female",
+    "audio_file": "jp_2.wav"
+  },
+  {
+    "voice": "Mortis",
+    "display_name": "JP Mortis",
+    "group": "Japanese Female",
+    "audio_file": "jp_3.wav"
+  },
+  {
+    "voice": "Umiri",
+    "display_name": "JP Umiri",
+    "group": "Japanese Female",
+    "audio_file": "jp_4.wav"
+  },
+  {
+    "voice": "Mei",
+    "display_name": "JP Togawa",
+    "group": "Japanese Female",
+    "audio_file": "jp_5.wav"
+  },
+  {
+    "voice": "Anon",
+    "display_name": "JP Anon",
+    "group": "Japanese Female",
+    "audio_file": "jp_6.wav"
+  },
+  {
+    "voice": "Arisa",
+    "display_name": "JP Arisa",
+    "group": "Japanese Female",
+    "audio_file": "jp_7.wav"
+  }
+]

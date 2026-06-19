@@ -1,0 +1,68 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Fetch Git LFS objects so the real model binaries (not pointer
+          # files) are included in the deployed Pages site.
+          lfs: true
+          fetch-depth: 0
+
+      - name: Verify LFS files are real
+        run: |
+          echo "Checking that LFS pointers were resolved to real binaries..."
+          for f in \
+            models/MOSS-TTS-Nano-100M-ONNX/moss_tts_global_shared.data \
+            models/MOSS-TTS-Nano-100M-ONNX/moss_tts_local_shared.data; do
+            if [ -f "$f" ]; then
+              size=$(stat -c%s "$f" 2>/dev/null || stat -f%z "$f")
+              echo "  $f -> ${size} bytes"
+              if [ "$size" -lt 1048576 ]; then
+                echo "  WARNING: $f looks like an LFS pointer (too small). Did you push with LFS?"
+              fi
+            fi
+          done
+
+      - name: List site contents
+        run: |
+          echo "=== Site structure ==="
+          find . -maxdepth 3 -not -path './.git/*' -not -path './MOSS-TTS-Nano-Reader/*' | sort | head -80
+          echo "=== Model sizes ==="
+          du -sh models/*/ 2>/dev/null || true
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

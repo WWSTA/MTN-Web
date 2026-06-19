@@ -1,0 +1,12 @@
+# Git LFS tracking for large ONNX model files that exceed GitHub's 100 MB
+# per-file limit. These are the external weight files used by the TTS and
+# audio-tokenizer ONNX graphs.
+models/MOSS-TTS-Nano-100M-ONNX/moss_tts_global_shared.data filter=lfs diff=lfs merge=lfs -text
+models/MOSS-TTS-Nano-100M-ONNX/moss_tts_local_shared.data filter=lfs diff=lfs merge=lfs -text
+models/MOSS-Audio-Tokenizer-Nano-ONNX/moss_audio_tokenizer_encode.data filter=lfs diff=lfs merge=lfs -text
+models/MOSS-Audio-Tokenizer-Nano-ONNX/moss_audio_tokenizer_decode_shared.data filter=lfs diff=lfs merge=lfs -text
+
+# Also track any other large .data / .onnx / .wasm files that may exceed 50 MB
+# (tracked by LFS proactively to keep the repo lean).
+*.data filter=lfs diff=lfs merge=lfs -text
+vendor/ort/*.wasm filter=lfs diff=lfs merge=lfs -text
